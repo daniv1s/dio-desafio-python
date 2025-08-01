@@ -111,7 +111,9 @@ class Conta:
             valor = float(valor)
             if valor > 0:
                 self._saldo += valor
-                self._depositos_realizados.append(valor)
+                data_hora = datetime.now()
+                data_hora = data_hora.strftime("%d/%m/%Y %H:%M:%S")
+                self._depositos_realizados.append((valor, data_hora))
                 print(f"\nDepósito de R$ {valor:.2f} realizado com sucesso!")
                 print(f"Saldo atual: R$ {self._saldo:.2f}\n")
             else:
@@ -120,19 +122,36 @@ class Conta:
                 print("\nErro ao processar a solicitação. Por favor, tente novamente!\n")
     
     def sacar (self, valor):
+        data_atual = datetime.now().date()
+        contador_data = 0
+        ultima_data_saque = None
+        
+        if self._saques_realizados:
+
+            ultima_data_saque = datetime.strptime(self._saques_realizados[-1][1], "%d/%m/%Y %H:%M:%S").date()
+
+            if ultima_data_saque != data_atual:
+                contador_data = 0
+
+            for saque in self._saques_realizados:
+                data_saque = datetime.strptime(saque[1], "%d/%m/%Y %H:%M:%S").date()
+                if data_saque == data_atual:
+                    contador_data += 1
+
         try:
             valor = float(valor)
             if valor > 0:
                 if (self._saldo - valor < 0):
                     print("\nErro ao realizar saque! Confira o saldo da sua conta.\n")
                 elif valor > self._limite:
-                    print(f"\nQuantidade não permitida! É apenas permitido saques de até R$ {self._limite}\n")
-                elif self._quantidade_saques == self._limite_saques:
+                    print(f"\nQuantidade não permitida! É apenas permitido saques de até R$ {self._limite},00\n")
+                elif contador_data == self._limite_saques:
                     print("\nNão foi possível realizar a operação! O limite de saques diários foi atingido.\n")
                 else:
                     self._saldo -= valor
-                    self._quantidade_saques += 1
-                    self._saques_realizados.append(valor)
+                    data_hora = datetime.now()
+                    data_hora = data_hora.strftime("%d/%m/%Y %H:%M:%S")
+                    self._saques_realizados.append((valor, data_hora))
                     print(f"\nSaque de R$ {valor:.2f} realizado com sucesso!\nSaldo da conta: R$ {self._saldo:.2f}\n")
             else:
                 print("\nPor favor, digite um valor válido!\n")
@@ -141,20 +160,16 @@ class Conta:
 
     def extrato (self):
         #Formata os valores das listas com "R$" e 2 casas decimais
-        depositos_formatados = ", ".join([f"R$ {float(valor):.2f}" for valor in self._depositos_realizados])
-        saques_formatados = ", ".join([f"R$ {float(valor):.2f}" for valor in self._saques_realizados])
+        depositos_formatados = "\n".join([f"Valor: R$ {float(valor):.2f} | Data e Hora: {data}" for valor, data in self._depositos_realizados])
+        saques_formatados = "\n".join([f"Valor: R$ {float(valor):.2f} | Data e Hora: {data}" for valor, data in self._saques_realizados])
 
-        print(textwrap.dedent(f"""
-        ----- Extrato da conta -----
-
-        Depósitos realizados: {depositos_formatados}
-
-        Saques realizados: {saques_formatados}
-
-        Saldo da conta: R$ {self._saldo:.2f}
-
-        ----------------------------
-        """))
+        print(textwrap.dedent("\n-------------------- Extrato da conta --------------------\n"))
+        print(textwrap.dedent("Depósitos realizados:\n"))
+        print(textwrap.dedent(f"{depositos_formatados}\n"))
+        print(textwrap.dedent("Saques realizados:\n"))
+        print(textwrap.dedent(f"{saques_formatados}\n"))
+        print(textwrap.dedent(f"Saldo da conta: R$ {self._saldo:.2f}\n"))
+        print(textwrap.dedent("----------------------------------------------------------"))
         
 # Funções
 
@@ -280,6 +295,10 @@ def main():
                     elif opcao == 'q':
                         print("\nSaindo da conta...\n")
                         break
+
+                    else:
+                        print("\nOpção inválida! Tente novamente.\n")
+
             else:
                 print("\nCPF ou senha incorretos, ou não encontrados! Por favor, tente novamente ou faça seu cadastro.\n")
             
